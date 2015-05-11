@@ -1,4 +1,5 @@
 require(ggplot2)
+require(plyr)
 
 #
 # Plot an age distribution for this extract
@@ -33,4 +34,23 @@ common_diagnoses <- function(extract_dir){
     labs(title="Common Diagnoses") +
     guides(fill=FALSE) +
     coord_flip()
+}
+
+#
+# Plot Clinical advice audit checkboxes
+#
+advice_audits <- function(extract_dir){
+  advice <- read.csv(sprintf("%s%s", extract_dir, "clinical_advice.csv"))
+  ca.audit <- advice[,8:11]
+  numtrue <- function(x) sum(x == "True")
+  audit.counts <- colwise(numtrue)(ca.audit)
+  audit.counts <- data.frame(t(audit.counts))  
+  names(audit.counts) <- c("Count")
+  audit.counts$Action <- row.names(audit.counts)
+  
+  View(audit.counts)
+  ggplot(audit.counts, aes(reorder(x, y), x=Action, y=Count, fill=Action)) + 
+    geom_bar(stat="identity") + 
+    coord_flip() + 
+    labs(title="Clinical Advice Audit Activity")
 }
