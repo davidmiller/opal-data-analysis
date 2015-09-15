@@ -4,6 +4,7 @@
 **Manipulation 1: Antibiotic Days for each Drug **
 
 ** Import Data and drop non-OPAT drugs **
+clear
 import delimited "antimicrobial.csv"
 drop if delivered_by=="Inpatient Team"
 drop if delivered_by==""
