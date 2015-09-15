@@ -5,7 +5,7 @@
 
 ** Import Data and drop non-OPAT drugs **
 clear
-import delimited "antimicrobial.csv"
+import delimited "antimicrobial.csv",varname(1)
 drop if delivered_by=="Inpatient Team"
 drop if delivered_by==""
 
@@ -31,7 +31,7 @@ restore
 
 ** We are using the antimicrobial dataset **
 clear
-import delimited "antimicrobial.csv"
+import delimited "antimicrobial.csv",varname(1)
 
 ** Drop drugs prescribed by inpatient team / where the delivered by field is blank - these are thought to also be inpatient prescriptions **
 drop if delivered_by=="Inpatient Team"
@@ -72,7 +72,7 @@ restore
 
 ** Import data **
 clear
-import delimited "antimicrobial.csv"
+import delimited "antimicrobial.csv",varname(1)
 ** Remove non OPAT drugs **
 ** Records where delivered by is blank are thought to be drugs imported from inpatient records where the route of administration isn't recorded **
 drop if delivered_by=="Inpatient Team"
@@ -134,7 +134,7 @@ restore
 
 ** Import Data **
 clear
-import delimited "line.csv"
+import delimited "line.csv",varname(1)
 tab line_type
 ** This will be improved once we move line_type to==dropdown **
 
