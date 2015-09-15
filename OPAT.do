@@ -67,6 +67,7 @@ export delimited "antibiotic_delivered_by.csv"
 **Manipulation 3: Work out how long patients received IV Abx via the OPAT service **
 
 ** Import data **
+clear
 import delimited "antimicrobial.csv"
 ** Remove non OPAT drugs **
 ** Records where delivered by is blank are thought to be drugs imported from inpatient records where the route of administration isn't recorded **
@@ -126,6 +127,7 @@ export delimited "line_types_used_per_person.csv"
 **Manipulation 5: Work out how long each different line type was used on average across the dataset **
 
 ** Import Data **
+clear
 import delimited "line.csv"
 tab line_type
 ** This will be improved once we move line_type to==dropdown **
