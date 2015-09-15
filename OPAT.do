@@ -65,6 +65,9 @@ collapse (max) carer DN GP OPAT Self UCLHatHome,by(episode_id)
 gen numberofways = carer + DN + GP + OPAT + Self + UCLHatHome
 export delimited "antibiotic_delivered_by.csv"
 
+** Uncollapse the dataset **
+restore
+
 **Manipulation 3: Work out how long patients received IV Abx via the OPAT service **
 
 ** Import data **
@@ -96,7 +99,6 @@ export delimited "duration_opat.csv"
 ** Uncollapse the dataset **
 restore
 
-
 **Manipulation 4: Work out which lines people have used **
 
 ** Import data** 
@@ -125,6 +127,9 @@ collapse (max) leaderflex midline PICC Peripheral Portacath,by(episode_id)
 gen numberofways = leaderflex + midline + PICC + Peripheral + Portacath
 export delimited "line_types_used_per_person.csv"
 
+** Uncollapse the dataset **
+restore
+
 **Manipulation 5: Work out how long each different line type was used on average across the dataset **
 
 ** Import Data **
@@ -149,6 +154,6 @@ collapse (iqr) iqr=line_duration (p50) median=line_duration (min) min=line_durat
 ** Data table now shows the summary statistics for line duration for each line type **
 export delimited "average_duration_line_type.csv"
 
-** Restore Dataset **
+** Uncollapse the dataset **
 restore
 
