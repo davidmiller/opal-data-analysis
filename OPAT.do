@@ -20,7 +20,12 @@ bysort drug: egen totaldays = sum(duration)
 ** Collapse the data to give the summary for each drug - NOTE PRESERVE STEP**
 preserve
 collapse (max)totaldays, by(drug)
-export delimited "antibiotic_days_per_drug.csv"
+local c_date = c(current_date)
+local c_time = c(current_time)
+local c_time_date = "`c_date'"+"_" +"`c_time'"
+local time_string = subinstr("`c_time_date'", ":", "_", .)
+local time_string = subinstr("`time_string'", " ", "_", .)
+export delimited antibiotic_days_per_drug_`time_string'.csv
 
 ** The data table now lists each drug and the total number of days it was prescribed across the whole OPAT dataset **
 
@@ -63,7 +68,12 @@ collapse (max) carer DN GP OPAT Self UCLHatHome,by(episode_id)
 
 ** Summate the different ways a person can receive drugs giving a score for total of number of different ways they received drugs **
 gen numberofways = carer + DN + GP + OPAT + Self + UCLHatHome
-export delimited "antibiotic_delivered_by.csv"
+local c_date = c(current_date)
+local c_time = c(current_time)
+local c_time_date = "`c_date'"+"_" +"`c_time'"
+local time_string = subinstr("`c_time_date'", ":", "_", .)
+local time_string = subinstr("`time_string'", " ", "_", .)
+export delimited "antibiotic_delivered_by_`time_string'.csv
 
 ** Uncollapse the dataset **
 restore
@@ -94,7 +104,12 @@ gen duration = end-start
 
 ** Get summary statistics **
 sum duration,detail
-export delimited "duration_opat.csv"
+local c_date = c(current_date)
+local c_time = c(current_time)
+local c_time_date = "`c_date'"+"_" +"`c_time'"
+local time_string = subinstr("`c_time_date'", ":", "_", .)
+local time_string = subinstr("`time_string'", " ", "_", .)
+export delimited "duration_opat.csv_`time_string'
 
 ** Uncollapse the dataset **
 restore
@@ -125,7 +140,12 @@ collapse (max) leaderflex midline PICC Peripheral Portacath,by(episode_id)
 
 ** Work out how many different types of line each person used **
 gen numberofways = leaderflex + midline + PICC + Peripheral + Portacath
-export delimited "line_types_used_per_person.csv"
+local c_date = c(current_date)
+local c_time = c(current_time)
+local c_time_date = "`c_date'"+"_" +"`c_time'"
+local time_string = subinstr("`c_time_date'", ":", "_", .)
+local time_string = subinstr("`time_string'", " ", "_", .)
+export delimited "line_types_used_per_person_`time_string'.csv
 
 ** Uncollapse the dataset **
 restore
@@ -152,7 +172,12 @@ preserve
 collapse (iqr) iqr=line_duration (p50) median=line_duration (min) min=line_duration (max) max=line_duration (mean) average=line_duration,by(line_type)
 
 ** Data table now shows the summary statistics for line duration for each line type **
-export delimited "average_duration_line_type.csv"
+local c_date = c(current_date)
+local c_time = c(current_time)
+local c_time_date = "`c_date'"+"_" +"`c_time'"
+local time_string = subinstr("`c_time_date'", ":", "_", .)
+local time_string = subinstr("`time_string'", " ", "_", .)
+export delimited "average_duration_line_type_`time_string'.csv
 
 ** Uncollapse the dataset **
 restore
