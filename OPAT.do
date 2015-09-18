@@ -41,6 +41,7 @@ import delimited "antimicrobial.csv",varname(1) bindquotes(strict)
 ** Drop drugs prescribed by inpatient team / where the delivered by field is blank - these are thought to also be inpatient prescriptions **
 drop if delivered_by=="Inpatient Team"
 drop if delivered_by==""
+drop if route=="PO"
 
 ** Clean the delivered by data - this section needs reviewing based on a tab delivered_by. This will be fixed when Delivered_by becomes a dropdown not a lookup list **
 drop if delivered_by=="in patient"
