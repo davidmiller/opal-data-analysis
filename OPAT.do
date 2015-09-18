@@ -5,7 +5,7 @@
 
 ** Import Data and drop non-OPAT drugs **
 clear
-import delimited "antimicrobial.csv",varname(1)
+import delimited "antimicrobial.csv",varname(1) bindquotes(strict)
 drop if delivered_by=="Inpatient Team"
 drop if delivered_by==""
 
@@ -36,7 +36,7 @@ restore
 
 ** We are using the antimicrobial dataset **
 clear
-import delimited "antimicrobial.csv",varname(1)
+import delimited "antimicrobial.csv",varname(1) bindquotes(strict)
 
 ** Drop drugs prescribed by inpatient team / where the delivered by field is blank - these are thought to also be inpatient prescriptions **
 drop if delivered_by=="Inpatient Team"
@@ -82,7 +82,7 @@ restore
 
 ** Import data **
 clear
-import delimited "antimicrobial.csv",varname(1)
+import delimited "antimicrobial.csv",varname(1) bindquotes(strict)
 ** Remove non OPAT drugs **
 ** Records where delivered by is blank are thought to be drugs imported from inpatient records where the route of administration isn't recorded **
 drop if delivered_by=="Inpatient Team"
@@ -118,7 +118,7 @@ restore
 
 ** Import data** 
 clear 
-import delimited "line.csv",varname(1)
+import delimited "line.csv",varname(1) bindquotes(strict)
 
 ** Generate a 0/1 column for each type of catheter. This currently includes a few extra lines because the data is not perfectly clean. In the long term this will be fixed by making line type a drop down not a look-up list **
 
@@ -154,7 +154,7 @@ restore
 
 ** Import Data **
 clear
-import delimited "line.csv",varname(1)
+import delimited "line.csv",varname(1) bindquotes(strict)
 tab line_type
 ** This will be improved once we move line_type to==dropdown **
 
