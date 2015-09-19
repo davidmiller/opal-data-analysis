@@ -25,7 +25,7 @@ local c_time = c(current_time)
 local c_time_date = "`c_date'"+"_" +"`c_time'"
 local time_string = subinstr("`c_time_date'", ":", "_", .)
 local time_string = subinstr("`time_string'", " ", "_", .)
-export delimited antibiotic_days_per_drug_`time_string'.csv
+export delimited "antibiotic_days_per_drug_`time_string'.csv"
 
 ** The data table now lists each drug and the total number of days it was prescribed across the whole OPAT dataset **
 
@@ -73,7 +73,7 @@ local c_time = c(current_time)
 local c_time_date = "`c_date'"+"_" +"`c_time'"
 local time_string = subinstr("`c_time_date'", ":", "_", .)
 local time_string = subinstr("`time_string'", " ", "_", .)
-export delimited "antibiotic_delivered_by_`time_string'.csv
+export delimited "antibiotic_delivered_by_`time_string'.csv"
 
 ** Uncollapse the dataset **
 restore
@@ -109,7 +109,7 @@ local c_time = c(current_time)
 local c_time_date = "`c_date'"+"_" +"`c_time'"
 local time_string = subinstr("`c_time_date'", ":", "_", .)
 local time_string = subinstr("`time_string'", " ", "_", .)
-export delimited "duration_opat.csv_`time_string'
+export delimited "duration_opat_`time_string'.csv"
 
 ** Uncollapse the dataset **
 restore
@@ -145,7 +145,7 @@ local c_time = c(current_time)
 local c_time_date = "`c_date'"+"_" +"`c_time'"
 local time_string = subinstr("`c_time_date'", ":", "_", .)
 local time_string = subinstr("`time_string'", " ", "_", .)
-export delimited "line_types_used_per_person_`time_string'.csv
+export delimited "line_types_used_per_person_`time_string'.csv"
 
 ** Uncollapse the dataset **
 restore
@@ -177,7 +177,7 @@ local c_time = c(current_time)
 local c_time_date = "`c_date'"+"_" +"`c_time'"
 local time_string = subinstr("`c_time_date'", ":", "_", .)
 local time_string = subinstr("`time_string'", " ", "_", .)
-export delimited "average_duration_line_type_`time_string'.csv
+export delimited "average_duration_line_type_`time_string'.csv"
 
 ** Uncollapse the dataset **
 restore
