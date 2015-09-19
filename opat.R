@@ -13,6 +13,7 @@ abx_days_by_drug <- function(extract_dir){
   abx <- abx[abx$delivered_by != "",]
   abx <- abx[abx$start_date != "None",]
   abx <- abx[abx$end_date != "None",]
+  abx <- abx[abx$route != "PO",]
   
   abx$duration <- as.Date(abx$end_date) - as.Date(abx$start_date)
   total.days <- ddply(abx, .(drug), summarize, total=sum(duration))
