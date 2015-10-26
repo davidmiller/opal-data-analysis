@@ -1,13 +1,20 @@
 require(ggplot2)
 require(plyr)
 
-view_table <- function (extract_dir, table_name){
-  table <- read.csv(sprintf("%s%s.csv", extract_dir, deparse(substitute(table_name))))
-  View(table)
-}
+#
+# Read an OPAL data table
+#
 read_table <- function(extract_dir, table_name){
   return(read.csv(sprintf("%s%s.csv", extract_dir, deparse(substitute(table_name)))))
 }
+
+#
+# View an OPAL data table in RStudio
+#
+view_table <- function (extract_dir, table_name){
+  View(read_table(extract_dir, table_name))
+}
+
 #
 # Plot an age distribution for this extract
 #
@@ -47,7 +54,7 @@ common_diagnoses <- function(extract_dir, freq=10){
 # Plot frequent travel destinatinos for this extract
 #
 common_destinations <- function(extract_dir, freq=10){
-  travel <- read.csv(sprintf("%s%s", extract_dir, "travel.csv"))
+  travel <- read_table(extract_dir, travel)
   destinations <- as.data.frame(table(travel$destination))
   names(destinations) <- c("Destination", "Frequency")
   
@@ -77,6 +84,9 @@ common_tests <- function(extract_dir, freq=20){
     guides(fill=FALSE) + coord_flip()
 }
 
+#
+# Plot common drugs
+#
 common_drugs <- function(extract_dir, freq=20){
   drugs <- as.data.frame(table(read_table(extract_dir, antimicrobial)$drug))
   names(drugs) <- c("Drug", "Frequency")
@@ -90,6 +100,10 @@ common_drugs <- function(extract_dir, freq=20){
     coord_flip()
 }
 
+#
+# Plot the diagnoses that led to a patient being treated with a 
+# given drug.
+#
 diagnoses_for_drug <- function(extract_dir, drug, freq=2){
   drug <- deparse(substitute(drug))
   antimicrobials <- read_table(extract_dir, antimicrobial)
@@ -112,6 +126,9 @@ diagnoses_for_drug <- function(extract_dir, drug, freq=2){
     coord_flip()
 }
 
+#
+# Plot the drugs used to treat patients with a given diagnosis
+#
 drugs_for_diagnosis <- function(extract_dir, diagnosis, freq=2){
   diagnosis <- deparse(substitute(diagnosis))
   diagnoses <- read_table(extract_dir, diagnosis)
@@ -146,11 +163,17 @@ length_of_stay <- function(extract_dir){
     scale_x_discrete(breaks=c(5, 10, 20, 30, 40, 60))
 }
 
+#
+# Return Blood cultures
+#
 blood_cultures <- function(extract_dir){
   tests <- read_table(extract_dir, microbiology_test)
   return(tests[tests$test == "Blood Culture",])
 }
 
+#
+# Plot common organisms from Blood Cultures
+#
 common_culture_organisms <- function(extract_dir, freq=20){
   cultures <- blood_cultures(extract_dir)
   organisms <- as.data.frame(table(na.omit(cultures$organism)))
