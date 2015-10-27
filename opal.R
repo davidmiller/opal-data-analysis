@@ -1,35 +1,64 @@
 require(ggplot2)
 require(plyr)
 
+if(!exists("OPALDATA")){
+  OPALDATA <<- FALSE  
+}
+
 #
 # Read an OPAL data table
 #
-read_table <- function(extract_dir, table_name){
-  return(read.csv(sprintf("%s%s.csv", extract_dir, deparse(substitute(table_name)))))
+read_table <- function(table_name){
+  table_name <- deparse(substitute(table_name))
+  return(read.csv(sprintf("%s%s.csv", OPALDATA, table_name)))
 }
 
 #
 # View an OPAL data table in RStudio
 #
-view_table <- function (extract_dir, table_name){
-  View(read_table(extract_dir, table_name))
+view_table <- function (table_name){
+  table_name <- deparse(substitute(table_name))
+  table <- read.csv(sprintf("%s%s.csv", OPALDATA, table_name))
+  View(table)
 }
 
 #
-# Plot an age distribution for this extract
+# Plot an age distribution for a given demographic subset
 #
-age_distribution <- function(extract_dir){  
-  demographics <- read.csv(sprintf("%s%s", extract_dir, "demographics.csv"))
+plot_age_distribution <- function(demographics, title="Age Distribution"){
   demographics$year.of.birth <- substr(demographics$date_of_birth, 0, 4)
   age <- function(x)  2015 - as.integer(x)
   demographics$age <- age(demographics$year.of.birth)
   ages <- as.data.frame(table(na.omit(demographics)$age))
   names(ages) <- c("Age", "Frequency")  
+  
   ggplot(ages, aes(x=Age, y=Frequency, fill=Age)) + 
     geom_bar(stat="identity") + 
-    labs(title="Age Distribution") + 
+    labs(title=title) + 
     guides(fill=FALSE) + 
     scale_x_discrete(breaks=c(20, 40, 60, 80))
+}
+
+#
+# Plot an age distribution for this extract
+#
+age_distribution <- function(){  
+  demographics <- read_table(demographics)
+  plot_age_distribution(demographics)
+}
+
+#
+# Plot The age distribution for a particular drug
+#
+age_distribution_for_drug <- function(drug){
+  drug <- deparse(substitute(drug))
+  antimicrobials <- read_table(antimicrobial)
+  episode.ids <- antimicrobials[antimicrobials$drug == drug,]$episode_id
+  demographics <- read_table(demographics)
+  demographics.for.episodes <- demographics[demographics$episode_id %in% episode.ids,]
+  numpatients <- as.character(nrow(demographics.for.episodes))
+  title <- sprintf("Age distribution of %s patients treated with %s", numpatients, drug)
+  plot_age_distribution(demographics.for.episodes, title=title)
 }
 
 #
