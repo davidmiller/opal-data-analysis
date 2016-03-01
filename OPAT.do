@@ -1,4 +1,3 @@
-
 ** The first three manipulations all use the antimicrobial.csv but for the purposes of ease I import the dataset afresh each time.  **
 ** The following two manipulation use the line.csv but again I import the dataset afresh each time **
 
@@ -157,6 +156,9 @@ local c_time_date = "`c_date'"+"_" +"`c_time'"
 local time_string = subinstr("`c_time_date'", ":", "_", .)
 local time_string = subinstr("`time_string'", " ", "_", .)
 export delimited "line_types_used_per_person_`time_string'.csv
+
+collapse (sum) hickman (sum) leaderflex (sum) midline (sum) PICC (sum) Peripheral (sum) Portacath 
+export delimited "summary_types_of_line_`time_string'.csv
 
 ** Uncollapse the dataset **
 restore
