@@ -20,9 +20,15 @@ location$referral <- as.Date(location$opat_referral, format="%Y-%m-%d")
 location$acceptance <- as.Date(location$opat_acceptance, format="%Y-%m-%d")
 opat.dates <- location[,c("episode_id", "referral", "acceptance", "opat_referral_team")]
 
+# Merge data
 opat <- merge(opat.drugs, opat.dates)
 
-opat$days.to.accept <- opat$acceptance - opat$referral
-opat$days.to.drug <- opat$start - opat$referral
+# Calculate differences
+opat$days.to.accept <- as.numeric(opat$acceptance - opat$referral)
+opat$days.to.drug <- as.numeric((opat$start - opat$referral))
 
-View(opat)
+opat.minus <- opat[opat$days.to.drug < 0,]
+opat.wait <- opat[opat$days.to.drug > 0,]
+
+opat.wait.by.team <- opat.wait[,c("opat_referral_team", "days.to.drug")]
+means.by.team <- aggregate(opat.wait.by.team, list(opat.wait.by.team$opat_referral_team), mean)
