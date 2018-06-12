@@ -30,13 +30,19 @@ bar_plot <- function(data, aesthetics, title){
     coord_flip()
 }
 
+episode_ids_for_pirmary_diagnosis <- function(condition){
+  diagnoses <- read_table(primary_diagnosis)
+  episode.ids <- diagnoses[diagnoses$Condition == condition,]$Episode
+  return(episode.ids)
+}
+
 #
 # Plot an age distribution for a given demographic subset
 #
 plot_age_distribution <- function(demographics, title="Age Distribution"){
-  demographics <- demographics[demographics$date_of_birth != "None",]
-  demographics$year.of.birth <- substr(demographics$date_of_birth, 0, 4)
-  age <- function(x)  2015 - as.integer(x)
+  demographics <- demographics[demographics$Date.of.Birth != "None",]
+  demographics$year.of.birth <- substr(demographics$Date.of.Birth, 0, 4)
+  age <- function(x) 2018 - as.integer(x)
   demographics$age <- age(demographics$year.of.birth)
   ages <- as.data.frame(table(demographics$age))
   names(ages) <- c("Age", "Frequency")  
@@ -60,14 +66,25 @@ age_distribution <- function(){
 # Plot The age distribution for a particular drug
 #
 age_distribution_for_drug <- function(drug){
-  drug <- deparse(substitute(drug))
+  #drug <- deparse(substitute(drug))
   antimicrobials <- read_table(antimicrobial)
-  episode.ids <- antimicrobials[antimicrobials$drug == drug,]$episode_id
+  episode.ids <- antimicrobials[antimicrobials$Drug == drug,]$Episode
   demographics <- read_table(demographics)
-  demographics.for.episodes <- demographics[demographics$episode_id %in% episode.ids,]
+  demographics.for.episodes <- demographics[demographics$Episode %in% episode.ids,]
   numpatients <- as.character(nrow(demographics.for.episodes))
   title <- sprintf("Age distribution of %s patients treated with %s", numpatients, drug)
   plot_age_distribution(demographics.for.episodes, title=title)
+}
+
+age_distribution_for_primary_diagnosis <- function(condition){
+  condition <- deparse(substitute(condition))
+  demographics <- read_table(demographics)
+  episode.ids <- episode_ids_for_pirmary_diagnosis(condition)
+  episodes <- read_table(episode)
+  patient.ids <- episodes[episodes$ID %in% episode.ids,]$Patient.ID
+  title <- sprintf("Age distribution for patients with %s", deparse(substitute(condition)))
+  our.demographics <- demographics[demographics$Patient %in% patient.ids,]
+  plot_age_distribution(our.demographics, title=title)
 }
 
 #
@@ -75,7 +92,7 @@ age_distribution_for_drug <- function(drug){
 #
 common_diagnoses <- function(freq=10){
   diagnoses <- read_table(diagnosis)
-  conditions <- as.data.frame(table(diagnoses$condition))
+  conditions <- as.data.frame(table(diagnoses$Condition))
   names(conditions) <- c("Condition", "Frequency")
   
   conditions <- conditions[conditions$Freq > freq,]
@@ -84,12 +101,59 @@ common_diagnoses <- function(freq=10){
   bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), "Common Diagnoses")
 }
 
+common_primary_diagnoses <- function(freq=10){
+  diagnoses <- read_table(primary_diagnosis)
+  conditions <- as.data.frame(table(diagnoses$Condition))
+  names(conditions) <- c("Condition", "Frequency")
+  conditions <- conditions[conditions$Frequency > freq,]
+  conditions <- conditions[conditions$Condition != "",]
+  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), "Top Primary Diagnoses")
+}
+
+common_opat_infective_diagnosis <- function(freq=10){
+  diagnoses <- read_table(opat_outcome)
+  conditions <- as.data.frame(table(diagnoses$Infective.Diagnosis))
+  names(conditions) <- c("Condition", "Frequency")
+  conditions <- conditions[conditions$Frequency > freq,]
+  conditions <- conditions[conditions$Condition != "",]
+  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), "Top OPAT Infective Diagnoses")  
+}
+
+temp_distribution <- function(
+  title="Temperature distribution (C temperatures plausibly compatible with life in humans)",
+  min=10, max=60){
+  obs <- read_table(observation)
+  obs <- obs[obs$Temperature < max,]
+  obs <- obs[obs$Temperature > min,]
+  temps <- as.data.frame(table(obs$Temperature))
+  names(temps) <- c("Temperature", "Frequency")
+  bar_plot(temps, aes(x=Temperature, y=Frequency, fill=Temperature), title)
+}
+
+febrile_episode_ids <- function(){
+  obs <- read_table(observation)
+  obs <- obs[obs$Temperature > 37.9,]  
+  obs <- obs[obs$Temperature < 60,]
+  return(obs$Episode)
+}
+
+fever_diagnoses <- function(freq=10){
+  diagnoses <- read_table(diagnosis)
+  diagnoses <- diagnoses[diagnoses$Episode %in% febrile_episode_ids(),]
+  febrile.diagnoses <- as.data.frame(table(diagnoses$Condition))
+  View(febrile.diagnoses)
+  names(febrile.diagnoses) <- c("Condition", "Frequency")
+  febrile.diagnoses <- febrile.diagnoses[febrile.diagnoses$Frequency > freq,]
+  bar_plot(febrile.diagnoses, aes(x=Condition, y=Frequency, fill=Condition), 
+           "Diagnoses for patients with a temperature > 37.0")
+}
+
 #
 # Plot frequent travel destinatinos for this extract
 #
 common_destinations <- function(freq=10){
   travel <- read_table(travel)
-  destinations <- as.data.frame(table(travel$destination))
+  destinations <- as.data.frame(table(travel$Destination))
   names(destinations) <- c("Destination", "Frequency")
   
   destinations <- destinations[destinations$Frequency > freq,]
@@ -103,7 +167,7 @@ common_destinations <- function(freq=10){
 # Plot common tests
 #
 common_tests <- function(freq=20){
-  tests <- as.data.frame(table(read_table(microbiology_test)$test))
+  tests <- as.data.frame(table(read_table(microbiology_test)$Test))
   names(tests) <- c("Test", "Frequency")
   tests <- tests[tests$Frequency > freq,]
   tests <- tests[tests$Test != "",]
@@ -114,11 +178,29 @@ common_tests <- function(freq=20){
 # Plot common drugs
 #
 common_drugs <- function(freq=20){
-  drugs <- as.data.frame(table(read_table(antimicrobial)$drug))
+  drugs <- as.data.frame(table(read_table(antimicrobial)$Drug))
   names(drugs) <- c("Drug", "Frequency")
   drugs <- drugs[drugs$Frequency > freq,]
   drugs <- drugs[drugs$Drug != "",]
   bar_plot(drugs, aes(x=Drug, y=Frequency, fill=Drug), "Common Treatments")
+}
+
+drug_days <- function(drug){
+  drug <- deparse(substitute(drug))
+  treatment <- read_table(antimicrobial)
+  
+  treatment <- treatment[treatment$End.Date != "None", ]
+  treatment <- treatment[treatment$Start.Date != "None", ]
+  treatment <- treatment[treatment$Drug == drug,]
+  
+  treatment$days <- as.Date(treatment$End.Date, "%Y-%m-%d") - as.Date(treatment$Start.Date, "%Y-%m-%d")
+  treatment <- treatment[treatment$days > -1,]
+  treatment$days <- treatment$days +1
+  
+  lengths <- as.data.frame(table(treatment$days))
+  names(lengths) <- c("Days", "Freq")
+  
+  bar_plot(lengths, aes(x=Days, y=Freq, fill=Days), sprintf("Days treated with %s", drug))
 }
 
 #
@@ -128,19 +210,19 @@ common_drugs <- function(freq=20){
 diagnoses_for_drug <- function(drug, freq=2){
   drug <- deparse(substitute(drug))
   antimicrobials <- read_table(antimicrobial)
-  episode.ids <- antimicrobials[antimicrobials$drug == drug,]$episode_id
-  diagnoses <- read_table(diagnosis)
+  episode.ids <- antimicrobials[antimicrobials$Drug == drug,]$Episode
+  diagnoses <- read_table(primary_diagnosis)
 
-  diagnoses.for.episodes <- diagnoses[diagnoses$episode_id %in% episode.ids,]
+  diagnoses.for.episodes <- diagnoses[diagnoses$Episode %in% episode.ids,]
   
-  conditions <- as.data.frame(table(diagnoses.for.episodes$condition))
+  conditions <- as.data.frame(table(diagnoses.for.episodes$Condition))
   
   names(conditions) <- c("Condition", "Frequency")
   
   conditions <- conditions[conditions$Frequency > freq,]
   conditions <- conditions[conditions$Condition != "",]
   
-  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), sprintf("%s%s", "Diagnoses for ", drug)) 
+  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), sprintf("%s%s", "Diagnoses treated with ", drug)) 
 }
 
 #
@@ -148,11 +230,11 @@ diagnoses_for_drug <- function(drug, freq=2){
 #
 drugs_for_diagnosis <- function(diagnosis, freq=2){
   diagnosis <- deparse(substitute(diagnosis))
-  diagnoses <- read_table(diagnosis)
-  episode.ids <- diagnoses[diagnoses$condition == diagnosis,]$episode_id
+  diagnoses <- read_table(primary_diagnosis)
+  episode.ids <- diagnoses[diagnoses$Condition == diagnosis,]$Episode
   antimicrobials <- read_table(antimicrobial)
-  drugs.for.diagnosis <- antimicrobials[antimicrobials$episode_id %in% episode.ids,]
-  drugs <- as.data.frame(table(drugs.for.diagnosis$drug))
+  drugs.for.diagnosis <- antimicrobials[antimicrobials$Episode %in% episode.ids,]
+  drugs <- as.data.frame(table(drugs.for.diagnosis$Drug))
   names(drugs) <- c("Drug", "Frequency")
   drugs <- drugs[drugs$Frequency > freq,]
   drugs <- drugs[drugs$Drug != "",]
@@ -163,19 +245,108 @@ drugs_for_diagnosis <- function(diagnosis, freq=2){
 #
 # Plot length of stay
 #
-length_of_stay <- function(){  
-  episodes <- read_table(episodes)
-  episodes$los <- as.Date(episodes$discharge_date, "%Y-%m-%d") - as.Date(episodes$date_of_admission, "%Y-%m-%d")
+los <- function(episodes){
+  episodes$los <- as.Date(episodes$End, "%Y-%m-%d") - as.Date(episodes$Start, "%Y-%m-%d")
+  return(episodes)
+}
 
-  los <- as.data.frame(table(na.omit(episodes[episodes$los >= 0,])$los))
-  names(los) <- c("LOS", "Frequency")  
-
+plot_los <- function(los, title="Length of stay"){
   ggplot(los, aes(x=LOS, y=Frequency, fill=LOS)) + 
     geom_bar(stat="identity") + 
-    labs(title="Length of stay", x="Days") + 
+    labs(title=title, x="Days") + 
     guides(fill=FALSE) +
     scale_x_discrete(breaks=c(5, 10, 20, 30, 40, 60))
 }
+
+length_of_stay <- function(length=0, title="Length of stay"){  
+  episodes <- read_table(episode)
+  episodes <- los(episodes)
+  episodes <- episodes[episodes$los > length,]
+  los <- as.data.frame(table(na.omit(episodes[episodes$los >= 0,])$los))
+  names(los) <- c("LOS", "Frequency")  
+  plot_los(los, title=title)
+}
+
+length_of_stay_for_primary_diagnosis <- function(condition){
+  condition <- deparse(substitute(condition))
+  episode.ids <- episode_ids_for_pirmary_diagnosis(condition)    
+  episodes <- read_table(episode)
+  our.episodes <- subset(episodes, ID %in% episode.ids)
+  episodes.with.los <- los(our.episodes)
+  our.los <- as.data.frame(table(na.omit(episodes.with.los$los)))
+  names(our.los) <- c("LOS", "Frequency")    
+  plot_los(our.los, title=sprintf("Length of stay: Patients with %s", condition))
+}
+
+length_of_stay_for_category <- function(what, length=0){
+  what <- deparse(substitute(what))
+  episodes <- read_table(episode)
+  episodes <- los(episodes)
+  
+  episodes <- episodes[episodes$los > length,]
+  episodes <- episodes[episodes$Category.Name == what, ]
+  
+  los <- as.data.frame(table(na.omit(episodes$los)))
+  names(los) <- c("LOS", "Frequency")  
+  plot_los(los, title=sprintf("%s Length of Episode", what))  
+}
+
+#
+# OPAT data
+#
+abx_with_opat_variables <- function(){
+  abx <- read_table(antimicrobial)
+  abx <- abx[abx$End.Date != "",]
+  abx <- abx[abx$Start.Date != "",]
+  abx <- abx[abx$Delivered.By != "",]
+  delivery.routes <- c(
+    "UCLH@Home (Non-NHS Community Nurse)",
+    "OPAT Clinic",
+    "District Nurse (NHS Community Nurse)",
+    "Self"
+    )
+  abx <- abx[abx$Delivered.By %in% delivery.routes,]
+  abx$days <- as.Date(abx$End.Date, "%Y-%m-%d") - as.Date(abx$Start.Date, "%Y-%m-%d")
+  abx <- abx[abx$days > -1,]
+  abx$days <- abx$days +1
+  return(abx)
+}
+
+drug_days_by_deliverer <- function(){
+  abx <- abx_with_opat_variables()
+  delivery.routes <- c(
+    "UCLH@Home (Non-NHS Community Nurse)",
+    "OPAT Clinic",
+    "District Nurse (NHS Community Nurse)",
+    "Self"
+  )
+  days <- c(
+    sum(abx[abx$Delivered.By == "UCLH@Home (Non-NHS Community Nurse)",]$days),
+    sum(abx[abx$Delivered.By == "OPAT Clinic",]$days),
+    sum(abx[abx$Delivered.By == "District Nurse (NHS Community Nurse)",]$days),
+    sum(abx[abx$Delivered.By == "Self",]$days)
+  )
+  days.by.deliverer <- data.frame(delivery.routes, days)
+  names(days.by.deliverer) <- c("Delivery.Route", "Drug.Days")
+  bar_plot(days.by.deliverer,
+         aes(y=Drug.Days, x=Delivery.Route, fill=Delivery.Route), 
+           "Drug Days by Delivery Route")
+}
+
+
+#  drug <- deparse(substitute(drug))
+#  treatment <- read_table(antimicrobial)
+#  treatment <- treatment[treatment$End.Date != "None", ]
+#  treatment <- treatment[treatment$Start.Date != "None", ]
+#  treatment <- treatment[treatment$Drug == drug,]
+#  treatment$days <- as.Date(treatment$End.Date, "%Y-%m-%d") - as.Date(treatment$Start.Date, "%Y-%m-%d")
+#  treatment <- treatment[treatment$days > -1,]
+#  treatment$days <- treatment$days +1
+#  lengths <- as.data.frame(table(treatment$days))
+#  names(lengths) <- c("Days", "Freq")
+#  bar_plot(lengths, aes(x=Days, y=Freq, fill=Days), sprintf("Days treated with %s", drug))
+
+
 
 #
 # Return Blood cultures
@@ -195,40 +366,13 @@ common_culture_organisms <- function(freq=20){
   
   organisms <- organisms[organisms$Frequency > freq, ]
   organisms <- organisms[organisms$Organism != "",]
-  
   bar_plot(organisms, aes(x=Organism, y=Frequency, fill=Organism), "Common Blood Culture Organisms")
 }
 
-# plot_audit_counts <- function(audit.counts){
-#   View(audit.counts)
-#   ggplot(audit.counts, aes(reorder(x, y), x=Action, y=Count, fill=Action)) + 
-#     geom_bar(stat="identity") + 
-#     coord_flip() + 
-#     labs(title="Clinical Advice Audit Activity")
-# }
-# 
-# #
-# # Plot Clinical advice audit checkboxes
-# #
-# advice_audits <- function(extract_dir){
-#   advice <- read.csv(sprintf("%s%s", extract_dir, "clinical_advice.csv"))
-#   ca.audit <- advice[,8:11]
-#   numtrue <- function(x) sum(x == "True")
-#   audit.counts <- colwise(numtrue)(ca.audit)
-#   audit.counts <- data.frame(t(audit.counts))  
-#   names(audit.counts) <- c("Count")
-#   audit.counts$Action <- row.names(audit.counts)
-#   plot_audit_counts(audit.counts)
-# }
-# 
-# advice_audits_for_user <- function(extract_dir, user){
-#   advice <- read.csv(sprintf("%s%s", extract_dir, "clinical_advice.csv"))
-#   advice <- advice[advice$initials == user,]
-#   ca.audit <- advice[,8:11]
-#   numtrue <- function(x) sum(x == "True")
-#   audit.counts <- colwise(numtrue)(ca.audit)
-#   audit.counts <- data.frame(t(audit.counts))  
-#   names(audit.counts) <- c("Count")
-#   audit.counts$Action <- row.names(audit.counts)
-#   plot_audit_counts(audit.counts)
-# }
+advice_given_by <- function(freq=10){
+  advice <- read_table(microbiology_input)
+  given.by <- as.data.frame(table(advice$Advice.given.by))
+  names(given.by) <- c("Person", "Frequency")
+  given.by <- given.by[given.by$Frequency > freq,]
+  bar_plot(given.by, aes(x=Person, y=Frequency, fill=Person), "Who gives advice?")
+}
