@@ -145,7 +145,7 @@ fever_diagnoses <- function(freq=10){
   names(febrile.diagnoses) <- c("Condition", "Frequency")
   febrile.diagnoses <- febrile.diagnoses[febrile.diagnoses$Frequency > freq,]
   bar_plot(febrile.diagnoses, aes(x=Condition, y=Frequency, fill=Condition), 
-           "Diagnoses for patients with a temperature > 37.0")
+           "Diagnoses for patients with a temperature > 37.9")
 }
 
 #
@@ -177,12 +177,12 @@ common_tests <- function(freq=20){
 #
 # Plot common drugs
 #
-common_drugs <- function(freq=20){
+common_drugs <- function(freq=20, title="Common Treatments"){
   drugs <- as.data.frame(table(read_table(antimicrobial)$Drug))
   names(drugs) <- c("Drug", "Frequency")
   drugs <- drugs[drugs$Frequency > freq,]
   drugs <- drugs[drugs$Drug != "",]
-  bar_plot(drugs, aes(x=Drug, y=Frequency, fill=Drug), "Common Treatments")
+  bar_plot(drugs, aes(x=Drug, y=Frequency, fill=Drug), title)
 }
 
 drug_days <- function(drug){
@@ -276,6 +276,41 @@ length_of_stay_for_primary_diagnosis <- function(condition){
   our.los <- as.data.frame(table(na.omit(episodes.with.los$los)))
   names(our.los) <- c("LOS", "Frequency")    
   plot_los(our.los, title=sprintf("Length of stay: Patients with %s", condition))
+}
+
+
+length_of_stay_by_consultant <- function(max=500){
+  consultants <- read_table(consultant_at_discharge)
+  consultants <- consultants[consultants$Consultant != "",]
+  episodes <- read_table(episode)
+  episodes <- los(episodes)
+  
+  episodes <- episodes[episodes$los > -1,]
+  episodes$los <- episodes$los +1
+  episodes <- episodes[episodes$los < max,]
+  #episodes <- episodes[na.omit(episodes$los),]
+  episodes.with.consultant <- merge(consultants, episodes, by.x="Episode", by.y="ID")
+  episodes.with.consultant <- data.frame(
+    consultant=episodes.with.consultant$Consultant, 
+    los=episodes.with.consultant$los
+    )
+  episodes.with.consultant$los <- as.integer(episodes.with.consultant$los)
+  
+  consultant.counts <- as.data.frame(table(episodes.with.consultant$consultant))
+  names(consultant.counts) <- c("consultant", "freq")
+  consultant.counts <- consultant.counts[consultant.counts$consultant != "", ]
+  consultant.counts$ticks <- sprintf("%s (%s)", consultant.counts$consultant, consultant.counts$freq)
+  
+  ggplot(episodes.with.consultant, aes(x=consultant, y=los)) + 
+    geom_boxplot(outlier.size=2) + 
+    stat_summary(fun.y=mean, geom="point", shape=23, size=4) +
+    scale_x_discrete(labels=consultant.counts$ticks) +
+    ggtitle("Length of stay by consultant. Inpatients 12/6/16-17.\nZoomed plot ignoring LOS >75") +
+    xlab("Consultant namne (episode count)") +
+    ylab("Length of stay in days")+
+    coord_flip()
+  
+  #return(episodes.with.consultant)
 }
 
 length_of_stay_for_category <- function(what, length=0){
