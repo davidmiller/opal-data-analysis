@@ -22,12 +22,16 @@ view_table <- function (table_name){
   View(table)
 }
 
-bar_plot <- function(data, aesthetics, title){
+bar_plot <- function(data, aesthetics, title, filename=""){
   ggplot(data, aesthetics) +
     geom_bar(stat="identity") +
     labs(title=title) +
     guides(fill=FALSE) +
     coord_flip()
+  
+  if(filename != ""){
+    ggsave(filename)
+  }
 }
 
 episode_ids_for_pirmary_diagnosis <- function(condition){
@@ -39,7 +43,7 @@ episode_ids_for_pirmary_diagnosis <- function(condition){
 #
 # Plot an age distribution for a given demographic subset
 #
-plot_age_distribution <- function(demographics, title="Age Distribution"){
+plot_age_distribution <- function(demographics, title="Age Distribution", filename=""){
   demographics <- demographics[demographics$Date.of.Birth != "None",]
   demographics$year.of.birth <- substr(demographics$Date.of.Birth, 0, 4)
   age <- function(x) 2018 - as.integer(x)
@@ -52,6 +56,9 @@ plot_age_distribution <- function(demographics, title="Age Distribution"){
     labs(title=title) + 
     guides(fill=FALSE) + 
     scale_x_discrete(breaks=c(20, 40, 60, 80))
+  if(filename != ""){
+    ggsave(filename)
+  }
 }
 
 #
@@ -90,7 +97,7 @@ age_distribution_for_primary_diagnosis <- function(condition){
 #
 # Plot frequent diagnoses for this extract
 #
-common_diagnoses <- function(freq=10){
+common_diagnoses <- function(freq=10, filename="", title="Common Diagnoses"){
   diagnoses <- read_table(diagnosis)
   conditions <- as.data.frame(table(diagnoses$Condition))
   names(conditions) <- c("Condition", "Frequency")
@@ -98,16 +105,16 @@ common_diagnoses <- function(freq=10){
   conditions <- conditions[conditions$Freq > freq,]
   conditions <- conditions[conditions$Condition != "",]
   
-  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), "Common Diagnoses")
+  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), title, filename=filename)
 }
 
-common_primary_diagnoses <- function(freq=10){
+common_primary_diagnoses <- function(freq=10, filename="", title="Top Primary Diagnoses"){
   diagnoses <- read_table(primary_diagnosis)
   conditions <- as.data.frame(table(diagnoses$Condition))
   names(conditions) <- c("Condition", "Frequency")
   conditions <- conditions[conditions$Frequency > freq,]
   conditions <- conditions[conditions$Condition != "",]
-  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), "Top Primary Diagnoses")
+  bar_plot(conditions, aes(x=Condition, y=Frequency, fill=Condition), title, filename=filename)
 }
 
 common_opat_infective_diagnosis <- function(freq=10){
@@ -278,6 +285,44 @@ length_of_stay_for_primary_diagnosis <- function(condition){
   plot_los(our.los, title=sprintf("Length of stay: Patients with %s", condition))
 }
 
+length_of_stay_by_primary_diagnosis <- function(max=500, min_cases=10){
+  conditions <- read_table(primary_diagnosis)
+  conditions.above.min <- as.data.frame(table(conditions$Condition))
+  names(conditions.above.min) <- c("Condition", "Freq")
+  conditions.above.min <- conditions.above.min[conditions.above.min$Freq > min_cases,]
+
+  episodes <- read_table(episode)
+  episodes <- los(episodes)
+  
+  episodes <- episodes[episodes$los > -1,]
+  episodes$los <- episodes$los +1
+  episodes <- episodes[episodes$los < max,]
+  
+  episodes.with.diagnosis <- merge(conditions, episodes, by.x="Episode", by.y="ID")
+  
+  episodes.with.diagnosis <- data.frame(
+    condition=episodes.with.diagnosis$Condition,
+    los=episodes.with.diagnosis$los
+  )
+  episodes.with.diagnosis$los <- as.integer(episodes.with.diagnosis$los)
+  episodes.with.diagnosis <- episodes.with.diagnosis[episodes.with.diagnosis$condition != "",]
+  #View(episodes.with.diagnosis)
+  #View(conditions.above.min)
+  diagnoses <- conditions.above.min$Condition
+  episodes <- episodes.with.diagnosis[episodes.with.diagnosis$condition %in% diagnoses,]
+  #View(episodes)
+  #episodes.with.diagnosis <- episodes.with.diagnosis[episodes.with.diagnosis$condtition %in% as.vector(conditions.above.min$Condition),]
+  #View(episodes.with.diagnosis)
+  ggplot(episodes, aes(x=condition, y=los)) + 
+    geom_boxplot(outlier.size=2) + 
+    stat_summary(fun.y=mean, geom="point", shape=23, size=4) +
+    #scale_x_discrete(labels=consultant.counts$ticks) +
+    ggtitle("Length of stay by diagnoisis") +
+    #xlab("Consultant namne (episode count)") +
+    #2ylab("Length of stay in days")+
+    coord_flip() 
+  
+}
 
 length_of_stay_by_consultant <- function(max=500){
   consultants <- read_table(consultant_at_discharge)
@@ -294,6 +339,8 @@ length_of_stay_by_consultant <- function(max=500){
     consultant=episodes.with.consultant$Consultant, 
     los=episodes.with.consultant$los
     )
+  write.csv(episodes.with.consultant, "~/consultant.los.csv")
+
   episodes.with.consultant$los <- as.integer(episodes.with.consultant$los)
   
   consultant.counts <- as.data.frame(table(episodes.with.consultant$consultant))
@@ -324,6 +371,19 @@ length_of_stay_for_category <- function(what, length=0){
   los <- as.data.frame(table(na.omit(episodes$los)))
   names(los) <- c("LOS", "Frequency")  
   plot_los(los, title=sprintf("%s Length of Episode", what))  
+}
+
+start_by_month <- function(){
+  episodes <- read_table(episode)
+  episodes$month <- sapply(
+    episodes$Start, 
+    function(x) sprintf("%s-01", substr(x, 1, 7))
+    )
+  start.months <- as.data.frame(table(episodes$month))
+  names(start.months)  <- c("Month", "Frequency")
+  start.months <- start.months[start.months$Month != "-01",]  
+  bar_plot(start.months, aes(x=Month, y=Frequency, fill=Month), 
+           "Episodes by month")
 }
 
 #
@@ -410,4 +470,24 @@ advice_given_by <- function(freq=10){
   names(given.by) <- c("Person", "Frequency")
   given.by <- given.by[given.by$Frequency > freq,]
   bar_plot(given.by, aes(x=Person, y=Frequency, fill=Person), "Who gives advice?")
+}
+
+reasons_for_advice <- function(title="Reasons for Microbiology clinical advice", filename=""){
+  advice <- read_table(microbiology_input)
+  advice <- advice[advice$Reason.For.Interaction != "",]
+  reasons <- as.data.frame((table(advice$Reason.For.Interaction)))
+  names(reasons) <- c("Reason", "Frequency")
+  bar_plot(reasons, aes(x=Reason, y=Frequency, fill=Reason), 
+           title, filename=filename)
+}
+
+advice_per_patient <- function(){
+  advice <- read_table(microbiology_input)
+  patient.advice <- as.data.frame(table(
+    as.data.frame(table(advice$Patient))$Freq
+  ))
+  names(patient.advice) <- c("Advice", "Frequency")
+  bar_plot(patient.advice, 
+           aes(x=Advice, y=Frequency, fill=Advice),
+           "Clinical advice entries per patient")
 }
