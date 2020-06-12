@@ -6,15 +6,23 @@
 # Globals and dependencies
 ###
 setwd("~/opal-data-analysis/")
-OPALDATA <- "~/src/ohc/data/antifungal/"
-TEAM_DISPLAY <- 'Antifungal list 1/10/18-30/9/19'
+OPALDATA <- "~/src/ohc/data/bloodcultures/"
+TEAM_DISPLAY <- 'Bactaeremia list 1/10/18-30/9/19'
 source("opal.R")
+library(stringr)
 
 ###
 # Utility Functions
 ###
 p <- function(output){
   cat(sprintf("%s\n", output))
+}
+
+field <- function(fieldname, data){
+  pattern <- paste(fieldname, "': '[a-zA-Z0-9 +]+", sep="")
+  result <- str_extract(data, pattern)
+  without.field <- substr(result, str_length(fieldname)+5, str_length(result))
+  return(without.field)
 }
 
 ###
